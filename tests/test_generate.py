@@ -1,7 +1,7 @@
 import pandas as pd
 
 from adviceline.backends import DummyBackend, slug
-from adviceline.generate import conversation, run
+from adviceline.generate import conversation, generate_answers
 
 
 def test_slug_is_filename_safe():
@@ -17,7 +17,7 @@ def test_multi_turn_conversation_includes_earlier_answers():
 
 
 def test_run_writes_one_row_per_turn_and_resumes(project, sample_prompts):
-    path = run("dummy", sample_prompts, project["results"], chunk=7, backend=DummyBackend())
+    path = generate_answers("dummy", sample_prompts, project["results"], chunk=7, backend=DummyBackend())
     df = pd.read_csv(path)
     n_single = (sample_prompts["kind"] == "single").sum()
     n_multi = (sample_prompts["kind"] == "multi").sum()
@@ -25,5 +25,5 @@ def test_run_writes_one_row_per_turn_and_resumes(project, sample_prompts):
     assert df["response_id"].is_unique
     assert set(df[df["item_id"].str.startswith("M-")]["turn"]) == {1, 2, 3}
 
-    run("dummy", sample_prompts, project["results"], backend=DummyBackend())  # nothing left to do
+    generate_answers("dummy", sample_prompts, project["results"], backend=DummyBackend())  # nothing left to do
     assert len(pd.read_csv(path)) == len(df)

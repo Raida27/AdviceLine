@@ -1,51 +1,47 @@
-"""Build notebooks/00_adviceline_all_code.ipynb: the whole project inside one Colab notebook.
+"""Build notebooks/AdviceLine.ipynb: the whole project as plain, runnable Python cells.
 
-Every project file becomes a `%%writefile` cell, so all the code is visible in the notebook and
-running the cells rebuilds the same package as the repository. Re-run this script after changing
-any file so the notebook never drifts from the code.
+Each module becomes one code cell that runs directly in the notebook (no files, no GitHub, no
+`!python -m`). The command-line parts (`main()`, `if __name__ == "__main__"`) and the imports
+between modules are removed, because in a notebook every cell shares one namespace. The data
+files become cells too. Results are saved to Google Drive.
+
+Re-run this script after changing any file so the notebook never drifts from the package.
 
 Run:  python tools/build_full_notebook.py
 """
 
+import ast
 import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "notebooks" / "00_adviceline_all_code.ipynb"
-RESULTS = "/content/drive/MyDrive/AdviceLine/results"
+OUT = ROOT / "notebooks" / "AdviceLine.ipynb"
+DRIVE_RESULTS = "/content/drive/MyDrive/AdviceLine/results"
 
-# (file, explanation shown above its cell), in the order you should read them
-FILES = [
-    ("pyproject.toml", "**Project settings.** The package name, the libraries it needs, and where the code lives (`src/`)."),
-    ("data/questions.csv", "**The 60 questions:** 10 topics × (2 information + 2 guidance + 2 recommendation-seeking)."),
-    ("data/personas.csv", "**One fictional persona per topic**, as a short version (a few details) and a full version."),
-    ("data/vulnerabilities.csv", "**Six vulnerability statements** based on the FCA's vulnerability drivers (health, life events, capability)."),
-    ("data/pressure.csv", "**Follow-up messages** that push for a direct recommendation in turns 2 and 3."),
-    ("src/adviceline/__init__.py", "Marks `adviceline` as a Python package."),
-    ("src/adviceline/config.py", "**Shared settings:** folders, the 4 rubric levels, flags and topic groups."),
-    ("src/adviceline/prompts.py", "**Builds the 300 benchmark items** from the four CSV files: 60 questions × 4 detail levels, plus 60 three-turn conversations."),
-    ("src/adviceline/backends.py", "**Talks to the language models.** Every backend has the same `chat()` method, so the rest of the code doesn't care whether a model runs on Colab's GPU, on Ollama or through an API."),
-    ("src/adviceline/generate.py", "**Collects each model's answers**, saving after every batch so a disconnect never loses work."),
-    ("src/adviceline/judge.py", "**The LLM judge.** A bigger model labels every answer with the rubric and returns JSON. These are *silver* labels until they're checked against human labels."),
-    ("src/adviceline/rules.py", "**A rule-based detector** (regular expressions). It's the simple baseline the machine-learning models must beat, and the guardrail uses it to find advice-like sentences."),
-    ("src/adviceline/metrics.py", "**The statistics:** Wilson confidence intervals, cluster bootstrap, Cohen's kappa, McNemar's test and calibration error."),
-    ("src/adviceline/db.py", "**Loads everything into DuckDB** so the analysis can be written in SQL."),
-    ("sql/analysis.sql", "**One SQL query per research question** (GROUP BY, FILTER, window functions)."),
-    ("src/adviceline/analysis.py", "**Runs the SQL**, adds confidence intervals and the drift test, and writes a results summary."),
-    ("src/adviceline/classify.py", "**Baseline classifier:** TF-IDF + logistic regression, evaluated with GroupKFold by question so there's no leakage."),
-    ("src/adviceline/finetune.py", "**Fine-tunes ModernBERT** (a small transformer) to predict the level. Needs the GPU."),
-    ("src/adviceline/guardrail.py", "**The guardrail:** detects advice-like answers and rewrites them as guidance, with signposting to free UK help."),
-    ("src/adviceline/api.py", "**The guardrail as a web API** (FastAPI). Run it on your Mac with `uvicorn adviceline.api:app`."),
-    ("src/adviceline/abtest.py", "**The blinded A/B test** of the guardrail: safety (McNemar) and helpfulness (Wilcoxon)."),
-    ("app/streamlit_app.py", "**The Streamlit app:** results, an answer explorer, blind labelling and a guardrail demo. Run it on your Mac with `streamlit run app/streamlit_app.py`."),
-    ("tests/conftest.py", "**Test helpers:** fake models and a fake judge, so the tests run without a GPU."),
-    ("tests/test_prompts.py", "Tests for the benchmark design."),
-    ("tests/test_metrics.py", "Tests for the statistics, checked against scikit-learn."),
-    ("tests/test_rules.py", "Tests for the rule-based detector."),
-    ("tests/test_judge.py", "Tests for reading the judge's JSON."),
-    ("tests/test_generate.py", "Tests for collecting answers, including resuming after a stop."),
-    ("tests/test_pipeline.py", "**End-to-end test:** generate → judge → DuckDB → SQL → statistics → classifier, on fake answers."),
-    ("tests/test_guardrail_api.py", "Tests for the guardrail and the API."),
+DATA_FILES = [
+    ("questions.csv", "The 60 questions: 10 topics × (2 information + 2 guidance + 2 recommendation-seeking)."),
+    ("personas.csv", "One fictional persona per topic, as a short version (a few details) and a full version."),
+    ("vulnerabilities.csv", "Six vulnerability statements based on the FCA's vulnerability drivers."),
+    ("pressure.csv", "Follow-up messages that push for a direct recommendation in turns 2 and 3."),
+]
+
+# (module, one-line summary). The order matters: each cell may use names from the cells above it.
+MODULES = [
+    ("config", "Shared settings: folders, the 4 rubric levels, flags and topic groups."),
+    ("prompts", "Builds the 300 benchmark items from the four data files."),
+    ("backends", "Talks to the language models. Every backend has the same `chat()` method."),
+    ("generate", "Collects each model's answers, saving after every batch."),
+    ("judge", "The LLM judge: labels every answer with the rubric."),
+    ("rules", "A rule-based detector: the simple baseline, also used by the guardrail."),
+    ("metrics", "The statistics: confidence intervals, kappa, McNemar, calibration."),
+    ("db", "Loads everything into DuckDB so the analysis can be written in SQL."),
+    ("SQL", "One SQL query per research question."),
+    ("analysis", "Runs the SQL, adds confidence intervals and the drift test, writes a summary."),
+    ("classify", "Baseline classifier: TF-IDF + logistic regression, GroupKFold by question."),
+    ("finetune", "Fine-tunes a small transformer (ModernBERT) on the GPU."),
+    ("guardrail", "Detects advice-like answers and rewrites them as guidance, with signposting."),
+    ("api", "The guardrail as a web API (FastAPI)."),
+    ("abtest", "The blinded A/B test of the guardrail."),
 ]
 
 
@@ -53,81 +49,136 @@ def md(text):
     return {"cell_type": "markdown", "metadata": {}, "source": text.strip("\n").splitlines(keepends=True)}
 
 
-def code(text):
-    return {"cell_type": "code", "execution_count": None, "metadata": {}, "outputs": [],
+def code(text, library=False):
+    meta = {"tags": ["library"]} if library else {}
+    return {"cell_type": "code", "execution_count": None, "metadata": meta, "outputs": [],
             "source": text.strip("\n").splitlines(keepends=True)}
 
 
-def writefile(path):
-    content = (ROOT / path).read_text()
-    return code(f"%%writefile {path}\n{content}")
+def explain(docstring):
+    """The module docstring without its command-line instructions."""
+    keep = []
+    for line in (docstring or "").splitlines():
+        if line.strip().startswith(("Run", "Batch use", "Docs:")):
+            break
+        keep.append(line)
+    return "\n".join(keep).strip()
+
+
+def notebook_code(module):
+    """A module's source, minus its docstring, inter-module imports and command-line entry point."""
+    source = (ROOT / "src" / "adviceline" / f"{module}.py").read_text()
+    tree = ast.parse(source)
+    drop = set()
+    for node in tree.body:
+        is_docstring = (node is tree.body[0] and isinstance(node, ast.Expr)
+                        and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str))
+        is_future = isinstance(node, ast.ImportFrom) and node.module == "__future__"
+        is_internal = (isinstance(node, ast.ImportFrom) and (node.module or "").startswith("adviceline")) or \
+                      (isinstance(node, ast.Import) and any(a.name.startswith("adviceline") for a in node.names))
+        is_main = isinstance(node, ast.FunctionDef) and node.name == "main"
+        is_entry = isinstance(node, ast.If) and "__name__" in ast.unparse(node.test)
+        if is_docstring or is_future or is_internal or is_main or is_entry:
+            drop.update(range(node.lineno, node.end_lineno + 1))
+    lines = [line for i, line in enumerate(source.splitlines(), start=1) if i not in drop]
+    text = "\n".join(lines).strip("\n")
+    while "\n\n\n\n" in text:
+        text = text.replace("\n\n\n\n", "\n\n\n")
+    if "argparse." not in text:
+        text = text.replace("import argparse\n", "")
+    return ast.get_docstring(tree), text
+
+
+def top_level_names(text):
+    names = set()
+    for node in ast.parse(text).body:
+        if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+            names.add(node.name)
+        elif isinstance(node, ast.Assign):
+            names.update(t.id for t in node.targets if isinstance(t, ast.Name))
+    return names
 
 
 def build():
-    cells = [
-        md("""
-# AdviceLine: the complete project in one notebook
-**When do AI chatbots cross the line from financial *guidance* into *advice*?**
+    cells = [md(f"""
+# AdviceLine ⚖️
+**When do AI chatbots cross the line from financial *guidance* into *advice*?** A UK benchmark, a classifier and a guardrail.
 
-All the code is in this notebook:
-- **Part A** has one cell per file. Running a `%%writefile` cell saves that code as a file, so together they build a proper Python package.
-- **Part B** runs the research on the GPU.
+**Every cell is plain Python that runs right here.**
+- **Part A** sets up the project: the data and every function. It takes seconds and needs no GPU.
+- **Part B** runs the research on the GPU. Every result is saved to Google Drive in `{DRIVE_RESULTS.replace('/content/drive/', '')}`.
 
-**Before you start:** Runtime → Change runtime type → **T4 GPU** → Save. Then run the cells from top to bottom.
-Part A takes about a minute; Part B about 2 hours. Results are saved to Google Drive after every batch. If Colab disconnects, run everything again and it carries on where it stopped.
+**Before you start:** Runtime → Change runtime type → **T4 GPU** → Save. Then run the cells from top to bottom (or Runtime → Run all).
+If Colab disconnects, reconnect and run all the cells again. Finished work is skipped, so it carries on where it stopped.
 
-Labels follow a published rubric, not a legal ruling. All personas are fictional.
+*Research, not legal advice: labels follow a published rubric (below), not a legal ruling. All personas are fictional.*
 """),
         md("## Part 0 · Setup"),
         code("# Is a GPU attached? You should see \"Tesla T4\"\n!nvidia-smi --query-gpu=name,memory.total --format=csv"),
+        code("# Libraries Colab doesn't include by default\n!pip install -q duckdb bitsandbytes fastapi httpx"),
         code(f"""
-# Save results to Google Drive so a disconnect never loses work (click Allow in the pop-up)
 import os
 from google.colab import drive
-drive.mount('/content/drive')
-RESULTS = '{RESULTS}'
-os.makedirs(RESULTS, exist_ok=True)
-print('Results will be saved to', RESULTS)
+
+drive.mount('/content/drive')  # click Allow in the pop-up
+
+# Results (answers, labels, tables) go to Google Drive, so nothing is lost if Colab disconnects
+os.environ['ADVICELINE_RESULTS'] = '{DRIVE_RESULTS}'
+
+# A working folder for the data files and the database
+for folder in ['/content/adviceline/data', '/content/adviceline/sql']:
+    os.makedirs(folder, exist_ok=True)
+os.chdir('/content/adviceline')
+print('Working folder:', os.getcwd())
+print('Results folder:', os.environ['ADVICELINE_RESULTS'])
 """),
-        code("""
-# Make the project folders and work inside them
-import os
-for folder in ['data', 'docs', 'sql', 'src/adviceline', 'app', 'tests', 'results']:
-    os.makedirs(f'/content/adviceline/{folder}', exist_ok=True)
-%cd /content/adviceline
-"""),
-        md("## Part A · The code\n### The rubric\nEvery label in the project follows these rules."),
+        md("## Part A · The project\n### The rubric\nEvery label in the project follows these rules."),
         md((ROOT / "docs" / "rubric.md").read_text().replace("# AdviceLine labelling rubric", "#### AdviceLine labelling rubric", 1)),
-        code("%%writefile docs/rubric.md\n" + (ROOT / "docs" / "rubric.md").read_text()),
+        md("### The benchmark data\nThe four hand-written tables that the 300 items are built from."),
     ]
-    section, seen = None, set()
-    titles = {"data": "### The benchmark data", "src": "### The Python package", "sql": "### The SQL",
-              "app": "### The app (runs on your Mac)", "tests": "### Tests"}
-    for path, explanation in FILES:
-        top = path.split("/")[0]
-        if top in titles and titles[top] != section:
-            section = titles[top]
-            cells.append(md(section + (" (continued)" if section in seen else "")))
-            seen.add(section)
-        cells.append(md(f"`{path}`: {explanation}"))
-        cells.append(writefile(path))
+    for name, about in DATA_FILES:
+        content = (ROOT / "data" / name).read_text()
+        assert '"""' not in content and "\\" not in content, name
+        cells.append(code(f'# {about}\nfrom pathlib import Path\n\nPath("data/{name}").write_text("""{content}""")', library=True))
+
+    cells.append(md("### The code\nEach cell below is one part of the project. Run them in order: later cells use functions from earlier ones."))
+    init = (ROOT / "src" / "adviceline" / "__init__.py").read_text()
+    cells.append(code(init.split('"""', 2)[2].strip(), library=True))  # __version__
+
+    seen = {}
+    for number, (module, summary) in enumerate(MODULES, start=1):
+        if module == "SQL":
+            sql = (ROOT / "sql" / "analysis.sql").read_text()
+            assert '"""' not in sql
+            cells.append(md(f"#### {number}. SQL\n**{summary}** Every query reads the view `labelled` (answers + one set of labels)."))
+            cells.append(code(f'ANALYSIS_SQL = """{sql}"""\n\nPath("sql/analysis.sql").write_text(ANALYSIS_SQL)', library=True))
+            continue
+        doc, text = notebook_code(module)
+        for n in top_level_names(text):
+            if n in seen:
+                raise SystemExit(f"Name clash: {n} is defined in both {seen[n]} and {module}")
+            seen[n] = module
+        cells.append(md(f"#### {number}. `{module}`\n**{summary}**\n\n{explain(doc)}"))
+        cells.append(code(text, library=True))
 
     cells += [
-        md("### Install the package and run the tests\nIf every test passes, the code above works."),
-        code("!pip install -q -e \".[dev]\" bitsandbytes\n!python -m adviceline.prompts\n!python -m pytest -q"),
         md("## Part B · Run the research\n### B1. Build the 300 benchmark items"),
         code("""
-!python -m adviceline.prompts
-import pandas as pd
-prompts = pd.read_csv('data/prompts.csv', keep_default_na=False)
-prompts.sample(5, random_state=1)[['item_id', 'topic', 'ask_type', 'detail_level', 'turn1']]
+items = write_prompts()
+items.sample(5, random_state=1)[['item_id', 'topic', 'ask_type', 'detail_level', 'turn1']]
 """),
         md("### B2. Quick test (about 3 minutes)\n5 single-turn items and 1 conversation through the first model, so problems show up early."),
         code("""
-!python -m adviceline.generate --model hf:Qwen/Qwen3-4B-Instruct-2507 --limit 5 --results-dir /content/test_results
-test = pd.read_csv('/content/test_results/responses/hf_Qwen_Qwen3-4B-Instruct-2507.csv')
-for row in test.head(3).itertuples():
-    print('USER:', row.user_message[:200]); print('MODEL:', row.response[:600]); print('-' * 80)
+from pathlib import Path
+import pandas as pd
+
+backend = make_backend('hf:Qwen/Qwen3-4B-Instruct-2507')  # downloads the model the first time
+test_file = generate_answers('hf:Qwen/Qwen3-4B-Instruct-2507', quick_sample(items, 5),
+                             Path('/content/test_results'), backend=backend)
+for row in pd.read_csv(test_file).head(3).itertuples():
+    print('USER:', row.user_message[:200])
+    print('MODEL:', row.response[:600])
+    print('-' * 80)
 """),
         md("""
 ### B3. Collect answers from the three models (about 15–20 minutes each)
@@ -136,8 +187,6 @@ for row in test.head(3).itertuples():
 | Qwen3-4B-Instruct-2507 | Alibaba | 4B | Apache 2.0 |
 | Phi-4-mini-instruct | Microsoft | 3.8B | MIT |
 | SmolLM3-3B | Hugging Face | 3B | Apache 2.0 |
-
-Each model runs in its own process (`!python -m ...`) so the GPU memory is freed before the next one.
 """),
         code("""
 MODELS = [
@@ -145,37 +194,65 @@ MODELS = [
     'hf:microsoft/Phi-4-mini-instruct',
     'hf:HuggingFaceTB/SmolLM3-3B',
 ]
-for m in MODELS:
-    !python -m adviceline.generate --model {m} --results-dir {RESULTS}
+for spec in MODELS:
+    backend = None
+    free_gpu()  # release the previous model's memory first
+    backend = make_backend(spec)
+    generate_answers(spec, items, RESULTS, backend=backend)
+backend = None
+free_gpu()
 """),
-        md("### B4. Label every answer with the LLM judge (about 30–45 minutes)\nQwen2.5-7B-Instruct, loaded in 4-bit to fit on the T4."),
-        code("JUDGE = 'hf4bit:Qwen/Qwen2.5-7B-Instruct'\n!python -m adviceline.judge --judge {JUDGE} --results-dir {RESULTS}"),
-        md("### B5. First look at the results (silver labels)"),
+        md("### B4. Label every answer with the LLM judge (about 30–45 minutes)\nQwen2.5-7B-Instruct, loaded in 4-bit to fit on the T4. These are *silver* labels until you check them against your own."),
         code("""
-!python -m adviceline.analysis --results-dir {RESULTS}
+JUDGE = 'hf4bit:Qwen/Qwen2.5-7B-Instruct'
+run_judge(JUDGE, RESULTS)
+free_gpu()
+"""),
+        md("### B5. First look at the results"),
+        code("""
 from IPython.display import Markdown, display
-display(Markdown(open(f'{RESULTS}/summary_judge.md').read()))
+
+tables = run_analysis('judge', results_dir=RESULTS)
+display(Markdown((RESULTS / 'summary_judge.md').read_text()))
 """),
         md("### B6. Guardrail A/B test: rewrite the advice-like answers, then label them again"),
         code("""
-!python -m adviceline.guardrail --rewriter hf:Qwen/Qwen3-4B-Instruct-2507 --judge {JUDGE} --results-dir {RESULTS}
-!python -m adviceline.judge --judge {JUDGE} --guarded --results-dir {RESULTS}
-!python -m adviceline.abtest analyse --results-dir {RESULTS}
+rewrite_batch('hf:Qwen/Qwen3-4B-Instruct-2507', RESULTS, judge=JUDGE)
+free_gpu()
+run_judge(JUDGE, RESULTS, guarded=True)
+free_gpu()
+safety(RESULTS)
 """),
-        md("### B7. Fine-tune the transformer classifier (about 10 minutes)"),
-        code("!python -m adviceline.finetune --results-dir {RESULTS}"),
-        md("### B8. Download the results\nThey also stay in Google Drive under **MyDrive/AdviceLine/results**."),
+        md("### B7. Baseline classifier (no GPU needed)\nCompare its kappa with the rule-based detector's."),
+        code("run_classifier('judge', results_dir=RESULTS)"),
+        md("### B8. Fine-tune the transformer classifier (about 10 minutes)"),
+        code("finetune_classifier(results_dir=RESULTS)"),
+        md("### B9. Try the guardrail API"),
+        code("""
+from fastapi.testclient import TestClient
+
+client = TestClient(app)
+draft = "If I were you, I'd open a Lifetime ISA and put £4,000 a year into it."
+client.post('/guard', json={'question': 'Should I save in a Lifetime ISA?', 'answer': draft}).json()
+"""),
+        md("### B10. Download the results (optional)\nThey also stay in Google Drive."),
         code("""
 !cd {RESULTS}/.. && zip -qr /content/adviceline_results.zip results -x 'results/models/*'
 from google.colab import files
 files.download('/content/adviceline_results.zip')
 """),
+        md("## Appendix · Code that runs outside Colab\nShown here so you can read it all in one place. These don't run in Colab: the app runs on your Mac (`streamlit run app/streamlit_app.py`) and the tests run with `pytest` on your Mac and on GitHub."),
+        md("#### The Streamlit app (`app/streamlit_app.py`)\n```python\n" + (ROOT / "app" / "streamlit_app.py").read_text() + "```"),
     ]
+    for test in sorted((ROOT / "tests").glob("*.py")):
+        cells.append(md(f"#### `tests/{test.name}`\n```python\n{test.read_text()}```"))
+
     nb = {"cells": cells, "metadata": {"accelerator": "GPU", "colab": {"gpuType": "T4", "provenance": []},
           "kernelspec": {"display_name": "Python 3", "name": "python3"}, "language_info": {"name": "python"}},
           "nbformat": 4, "nbformat_minor": 0}
     OUT.write_text(json.dumps(nb, indent=1, ensure_ascii=False))
-    print(f"Wrote {OUT} ({len(cells)} cells, {sum(1 for c in cells if c['source'][:1] and c['source'][0].startswith('%%writefile'))} files)")
+    n_code = sum(c["cell_type"] == "code" for c in cells)
+    print(f"Wrote {OUT}: {len(cells)} cells ({n_code} code), no name clashes across {len(seen)} names")
 
 
 if __name__ == "__main__":

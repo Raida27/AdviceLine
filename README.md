@@ -46,14 +46,14 @@ flowchart LR
 | Step | Where | Command |
 |---|---|---|
 | Build the 300 items | Mac | `python -m adviceline.prompts` |
-| Collect answers from 3 models | Colab (T4 GPU) | `notebooks/01_colab_run.ipynb` |
+| Collect answers from 3 models | Colab (T4 GPU) | `notebooks/AdviceLine.ipynb` (all the code in plain cells) |
 | LLM-judge labels | Colab | same notebook |
 | Your own labels (blind) | Mac | `streamlit run app/streamlit_app.py` → Label answers |
 | Analysis (SQL + statistics) | Mac | `python -m adviceline.analysis --labels judge` (or `human`) |
 | Baseline classifier | Mac | `python -m adviceline.classify` |
-| Transformer classifier | Colab | `notebooks/02_finetune_classifier.ipynb` |
+| Transformer classifier | Colab | `notebooks/AdviceLine.ipynb`, step B8 |
 | Guardrail API | Mac | `uvicorn adviceline.api:app --reload` → http://127.0.0.1:8000/docs |
-| A/B test | Colab + Mac | notebook step 7, then rate pairs in the app |
+| A/B test | Colab + Mac | notebook step B6, then rate pairs in the app |
 
 **Models tested (v0.1):** Qwen3-4B-Instruct-2507 (Apache 2.0), Phi-4-mini-instruct (MIT) and SmolLM3-3B (Apache 2.0), with greedy decoding and no system prompt. **Judge:** Qwen2.5-7B-Instruct (4-bit). Hosted models can be added with the `api:` backend (set `ADVICELINE_API_KEY` and a spending limit).
 
@@ -79,7 +79,7 @@ data/            questions, personas, vulnerabilities, pressure messages → pro
 docs/            rubric.md (labelling rules), related_work.md, how_it_works.md (learning guide)
 src/adviceline/  prompts, backends, generate, judge, rules, db, metrics, analysis, classify, finetune, guardrail, api, abtest
 sql/             analysis.sql (one named query per research question)
-notebooks/       Colab notebooks for the GPU steps
+notebooks/       AdviceLine.ipynb: the whole project as plain Colab cells (built by tools/build_full_notebook.py)
 app/             Streamlit app
 results/         model answers, judge labels, tables (created by the pipeline)
 tests/           pytest suite, including an end-to-end test on fake answers

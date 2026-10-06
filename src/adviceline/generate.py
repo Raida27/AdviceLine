@@ -44,7 +44,7 @@ def conversation(item: dict, turn: int, previous: dict) -> list[dict]:
     return messages
 
 
-def run(model_spec: str, prompts: pd.DataFrame, results_dir: Path = RESULTS,
+def generate_answers(model_spec: str, prompts: pd.DataFrame, results_dir: Path = RESULTS,
         chunk: int = 64, backend=None) -> Path:
     out_path = Path(results_dir) / "responses" / f"{slug(model_spec)}.csv"
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -90,6 +90,12 @@ def run(model_spec: str, prompts: pd.DataFrame, results_dir: Path = RESULTS,
     return out_path
 
 
+def quick_sample(prompts: pd.DataFrame, n: int) -> pd.DataFrame:
+    """The first n single-turn items plus a few conversations, for a quick test."""
+    return pd.concat([prompts[prompts["kind"] == "single"].head(n),
+                      prompts[prompts["kind"] == "multi"].head(max(1, n // 5))])
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--model", required=True, help="backend spec, e.g. hf:Qwen/Qwen3-4B-Instruct-2507")
@@ -100,10 +106,8 @@ def main() -> None:
 
     prompts = pd.read_csv(DATA / "prompts.csv", keep_default_na=False)
     if args.limit:
-        # Take a mix of single and multi-turn items for quick tests
-        prompts = pd.concat([prompts[prompts["kind"] == "single"].head(args.limit),
-                             prompts[prompts["kind"] == "multi"].head(max(1, args.limit // 5))])
-    run(args.model, prompts, Path(args.results_dir), chunk=args.chunk)
+        prompts = quick_sample(prompts, args.limit)
+    generate_answers(args.model, prompts, Path(args.results_dir), chunk=args.chunk)
 
 
 if __name__ == "__main__":

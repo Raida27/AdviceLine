@@ -94,7 +94,7 @@ def user_messages_for(response_row: dict, prompts: pd.DataFrame) -> list[str]:
     return [m for m in msgs[: int(response_row["turn"])] if m]
 
 
-def run(judge_spec: str, results_dir: Path = RESULTS, chunk: int = 32, backend=None,
+def run_judge(judge_spec: str, results_dir: Path = RESULTS, chunk: int = 32, backend=None,
         guarded: bool = False) -> Path:
     """Label every answer in results/responses (or, with guarded=True, results/guarded)."""
     results_dir = Path(results_dir)
@@ -138,7 +138,7 @@ def main() -> None:
     p.add_argument("--results-dir", default=str(RESULTS))
     p.add_argument("--guarded", action="store_true", help="label the guardrail's rewritten answers instead")
     args = p.parse_args()
-    run(args.judge, Path(args.results_dir), guarded=args.guarded)
+    run_judge(args.judge, Path(args.results_dir), guarded=args.guarded)
 
 
 if __name__ == "__main__":

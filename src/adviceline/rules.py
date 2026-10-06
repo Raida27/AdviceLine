@@ -82,7 +82,7 @@ def sentence_level(sentence: str) -> int:
     return 0
 
 
-def assess(answer: str) -> dict:
+def detect_advice(answer: str) -> dict:
     """Estimate the rubric level and flags of one answer."""
     sents = sentences(answer)
     levels = [sentence_level(s) for s in sents]

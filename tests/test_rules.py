@@ -1,6 +1,6 @@
 import pytest
 
-from adviceline.rules import assess, sentence_level
+from adviceline.rules import detect_advice as assess, sentence_level
 
 
 @pytest.mark.parametrize("text, level", [

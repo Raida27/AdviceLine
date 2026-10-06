@@ -52,10 +52,10 @@ def health() -> dict:
 
 
 @app.post("/assess", response_model=Assessment)
-def assess_answer(body: AnswerIn) -> dict:
+def api_assess(body: AnswerIn) -> dict:
     return assess(body.answer, classifier)
 
 
 @app.post("/guard", response_model=Guarded)
-def guard_answer(body: AnswerIn) -> dict:
+def api_guard(body: AnswerIn) -> dict:
     return guard(body.question, body.answer, topic=body.topic, classifier=classifier)

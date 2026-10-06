@@ -13,10 +13,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from adviceline import rules
 from adviceline.config import DATA, DB_PATH, RESULTS, ROOT
 from adviceline.db import build, use_labels
 from adviceline.metrics import cohen_kappa, kappa_label, mcnemar_exact, wilson_ci
+from adviceline.rules import detect_advice
 
 RATE_COLS = ["advice_like", "beyond_guidance", "refused", "signposted", "named_product"]
 
@@ -83,7 +83,7 @@ def agreement(con) -> pd.DataFrame:
     rule_labels = pd.DataFrame({
         "response_id": texts.index,
         "who": "rules baseline",
-        "level": [rules.assess(t)["level"] for t in texts],
+        "level": [detect_advice(t)["level"] for t in texts],
     })
     labels = pd.concat([labels[["response_id", "who", "level"]], rule_labels], ignore_index=True)
     wide = labels.pivot_table(index="response_id", columns="who", values="level", aggfunc="first")
@@ -115,7 +115,7 @@ def markdown_table(df: pd.DataFrame, max_rows: int = 40) -> str:
     return "\n".join([head, sep, *body])
 
 
-def run(source: str = "judge", who: str | None = None, results_dir: Path = RESULTS,
+def run_analysis(source: str = "judge", who: str | None = None, results_dir: Path = RESULTS,
         data_dir: Path = DATA, db_path: Path = DB_PATH) -> dict[str, pd.DataFrame]:
     con = build(results_dir=results_dir, data_dir=data_dir, db_path=db_path)
     use_labels(con, source, who)
@@ -149,7 +149,7 @@ def main() -> None:
     p.add_argument("--who", default=None, help="one judge model or annotator name")
     p.add_argument("--results-dir", default=str(RESULTS))
     args = p.parse_args()
-    run(args.labels, args.who, Path(args.results_dir))
+    run_analysis(args.labels, args.who, Path(args.results_dir))
 
 
 if __name__ == "__main__":

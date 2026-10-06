@@ -97,12 +97,18 @@ def turns(item: dict) -> list[str]:
     return [t for t in (item["turn1"], item.get("turn2", ""), item.get("turn3", "")) if isinstance(t, str) and t]
 
 
-def main() -> None:
-    items = build_items(load_sources())
+def write_prompts(data_dir: Path = DATA) -> pd.DataFrame:
+    """Build, check and save the items to data/prompts.csv."""
+    items = build_items(load_sources(data_dir))
     validate(items)
-    out = DATA / "prompts.csv"
+    out = Path(data_dir) / "prompts.csv"
     items.to_csv(out, index=False)
     print(f"Wrote {len(items)} items to {out}")
+    return items
+
+
+def main() -> None:
+    items = write_prompts()
     print(items.groupby(["kind", "ask_type"]).size().to_string())
 
 

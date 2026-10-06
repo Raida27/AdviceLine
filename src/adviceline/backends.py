@@ -190,6 +190,18 @@ def make_backend(spec: str, **kwargs):
     raise ValueError(f"Unknown backend '{kind}'. Use dummy, hf, hf4bit, ollama or api.")
 
 
+def free_gpu() -> None:
+    """Release GPU memory after deleting a model (useful inside a notebook)."""
+    import gc
+    gc.collect()
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except ImportError:
+        pass
+
+
 def slug(spec: str) -> str:
     """A filename-safe version of a model spec: 'hf:Qwen/Qwen3-4B' -> 'hf_Qwen_Qwen3-4B'."""
     return re.sub(r"[^A-Za-z0-9._-]+", "_", spec).strip("_")

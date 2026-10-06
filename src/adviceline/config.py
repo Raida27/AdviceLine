@@ -1,12 +1,19 @@
 """Paths and constants shared by the whole project."""
 
+import os
 from pathlib import Path
 
-# The project root is two folders above this file: src/adviceline/config.py
-ROOT = Path(__file__).resolve().parents[2]
+try:
+    # The project root is two folders above this file: src/adviceline/config.py
+    ROOT = Path(__file__).resolve().parents[2]
+except NameError:
+    # Inside a notebook there is no __file__, so use the current folder
+    ROOT = Path.cwd()
 DATA = ROOT / "data"
-RESULTS = ROOT / "results"
+# Set ADVICELINE_RESULTS to save results somewhere else (e.g. Google Drive in Colab)
+RESULTS = Path(os.environ.get("ADVICELINE_RESULTS", ROOT / "results"))
 DB_PATH = ROOT / "adviceline.duckdb"
+BASELINE_MODEL_PATH = RESULTS / "models" / "baseline.joblib"
 
 # The 4-level scale from docs/rubric.md
 LEVELS = {

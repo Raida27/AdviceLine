@@ -22,11 +22,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from adviceline import rules
 from adviceline.backends import make_backend, slug
-from adviceline.config import LEVELS, RESULTS
-
-MODEL_PATH = RESULTS / "models" / "baseline.joblib"
+from adviceline.config import BASELINE_MODEL_PATH, LEVELS, RESULTS
+from adviceline.db import build
+from adviceline.rules import detect_advice, sentence_level, sentences
 
 # Free or regulated places to get help, by topic group
 SIGNPOSTS = {
@@ -91,7 +90,7 @@ def signposting(topic: str) -> str:
     return "Free and regulated help:\n" + "\n".join(lines)
 
 
-def load_classifier(path: Path = MODEL_PATH):
+def load_classifier(path: Path = BASELINE_MODEL_PATH):
     if Path(path).exists():
         import joblib
         return joblib.load(path)
@@ -100,7 +99,7 @@ def load_classifier(path: Path = MODEL_PATH):
 
 def assess(answer: str, classifier=None) -> dict:
     """Level of one answer, using the rules and (if given) the trained classifier."""
-    result = rules.assess(answer)
+    result = detect_advice(answer)
     result["method"] = "rules"
     if classifier is not None:
         clf_level = int(classifier.predict([answer])[0])
@@ -112,7 +111,7 @@ def assess(answer: str, classifier=None) -> dict:
 
 
 def rewrite_without_llm(answer: str, topic: str) -> str:
-    kept = [s for s in rules.sentences(answer) if rules.sentence_level(s) < 2]
+    kept = [s for s in sentences(answer) if sentence_level(s) < 2]
     body = " ".join(kept).strip()
     return f"{BOUNDARY_NOTE}\n\n{body}\n\n{signposting(topic)}".strip()
 
@@ -143,7 +142,6 @@ def guard(question: str, answer: str, topic: str | None = None, threshold: int =
 def rewrite_batch(rewriter_spec: str, results_dir: Path = RESULTS, judge: str | None = None,
                   chunk: int = 32, backend=None) -> Path:
     """Rewrite every answer the LLM judge rated 2 or 3, for the A/B test."""
-    from adviceline.db import build
     con = build(results_dir=results_dir)
     where = "AND label_source = ?" if judge else ""
     rows = con.execute(f"""

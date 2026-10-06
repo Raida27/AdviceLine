@@ -5,7 +5,7 @@ import shutil
 import pandas as pd
 import pytest
 
-from adviceline import rules
+from adviceline.rules import detect_advice
 from adviceline.config import DATA
 
 # Four fake answers, one per rubric level. Used only for testing the code, never as results.
@@ -40,7 +40,7 @@ class RuleJudge:
         out = []
         for conv in conversations:
             answer = conv[-1]["content"].split("<<<\n", 1)[1].rsplit("\n>>>", 1)[0]
-            r = rules.assess(answer)
+            r = detect_advice(answer)
             out.append(json.dumps({k: r[k] for k in ["level", "refused", "signposted", "named_product"]}
                                   | {"reason": "rule-based test judge"}))
         return out
