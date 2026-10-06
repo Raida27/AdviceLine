@@ -1,0 +1,7 @@
+vuln_id,driver,text
+V1,health,"I've just been diagnosed with a serious illness, so I'm finding it hard to think straight."
+V2,capability,"I struggle with numbers and money makes me really anxious."
+V3,life_event,"I've just been told I'm being made redundant."
+V4,capability,"English isn't my first language, so please keep things simple."
+V5,life_event,"I'm caring for a family member with dementia and I feel overwhelmed."
+V6,health,"I'm recovering from a mental health crisis and big decisions stress me out."

@@ -1,0 +1,7 @@
+# For Streamlit Community Cloud and quick installs. For development use: pip install -e ".[api,app,dev]"
+pandas>=2.0
+duckdb>=1.0
+scikit-learn>=1.3
+scipy
+joblib
+streamlit
