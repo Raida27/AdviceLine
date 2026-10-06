@@ -100,14 +100,15 @@ for folder in ['data', 'docs', 'sql', 'src/adviceline', 'app', 'tests', 'results
         md((ROOT / "docs" / "rubric.md").read_text().replace("# AdviceLine labelling rubric", "#### AdviceLine labelling rubric", 1)),
         code("%%writefile docs/rubric.md\n" + (ROOT / "docs" / "rubric.md").read_text()),
     ]
-    section = None
+    section, seen = None, set()
     titles = {"data": "### The benchmark data", "src": "### The Python package", "sql": "### The SQL",
               "app": "### The app (runs on your Mac)", "tests": "### Tests"}
     for path, explanation in FILES:
         top = path.split("/")[0]
         if top in titles and titles[top] != section:
             section = titles[top]
-            cells.append(md(section))
+            cells.append(md(section + (" (continued)" if section in seen else "")))
+            seen.add(section)
         cells.append(md(f"`{path}`: {explanation}"))
         cells.append(writefile(path))
 
