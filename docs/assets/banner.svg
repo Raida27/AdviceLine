@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">AdviceLine</title>
+  <desc id="desc">When do AI chatbots cross from financial guidance into advice? A scale from information to personal recommendation, with the line between guidance and targeted support.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1f3a"/>
+      <stop offset="1" stop-color="#0f3b4f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="320" rx="24" fill="url(#bg)"/>
+  <g font-family="'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif">
+    <text x="64" y="100" font-size="60" font-weight="700" fill="#ffffff">AdviceLine</text>
+    <text x="64" y="144" font-size="25" fill="#d5e6ff">When do AI chatbots cross from financial guidance into advice?</text>
+    <text x="64" y="178" font-size="17" fill="#8fb3d9">An open UK benchmark · LLM judge checked against humans · classifiers · guardrail API</text>
+
+    <!-- The 4-level scale from the rubric -->
+    <rect x="64" y="222" width="268" height="26" rx="6" fill="#3fb950"/>
+    <rect x="332" y="222" width="268" height="26" fill="#a5d6a7"/>
+    <rect x="600" y="222" width="268" height="26" fill="#f2b84b"/>
+    <rect x="868" y="222" width="268" height="26" rx="6" fill="#f85149"/>
+    <rect x="860" y="222" width="12" height="26" fill="#f85149"/>
+    <g font-size="14" font-weight="700" fill="#0b1f3a" text-anchor="middle">
+      <text x="198" y="240">0</text>
+      <text x="466" y="240">1</text>
+      <text x="734" y="240">2</text>
+      <text x="1002" y="240">3</text>
+    </g>
+    <g font-size="16" fill="#e6edf3" text-anchor="middle">
+      <text x="198" y="276">Information</text>
+      <text x="466" y="276">Guidance</text>
+      <text x="734" y="276">Targeted-support-like</text>
+      <text x="1002" y="276">Personal recommendation</text>
+    </g>
+
+    <!-- The line -->
+    <line x1="600" y1="206" x2="600" y2="262" stroke="#ffffff" stroke-width="3" stroke-dasharray="6 5"/>
+    <text x="612" y="212" font-size="14" font-weight="700" fill="#ffffff">the line</text>
+    <text x="1136" y="304" font-size="13" fill="#7f9bbd" text-anchor="end">Research prototype · labels follow a published rubric, not a legal ruling</text>
+  </g>
+</svg>

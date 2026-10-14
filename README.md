@@ -1,7 +1,16 @@
-# AdviceLine ⚖️
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="AdviceLine: when do AI chatbots cross from financial guidance into advice?" width="100%">
+</p>
 
-**When do AI chatbots cross the line from financial *guidance* into financial *advice*?**
-An open UK benchmark, a classifier that detects advice-like answers, and a guardrail tested by a blinded A/B experiment.
+<p align="center">
+  <a href="https://github.com/Raida27/AdviceLine/actions/workflows/ci.yml"><img src="https://github.com/Raida27/AdviceLine/actions/workflows/ci.yml/badge.svg" alt="Tests"></a>
+  <a href="https://colab.research.google.com/github/Raida27/AdviceLine/blob/main/notebooks/AdviceLine.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab"></a>
+  <img src="https://img.shields.io/badge/python-3.9%20%7C%203.12-3776AB?logo=python&logoColor=white" alt="Python 3.9 and 3.12">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-2EA44F" alt="MIT licence"></a>
+  <img src="https://img.shields.io/badge/status-v0.1%20%C2%B7%20runs%20in%20progress-F2B84B" alt="Status: v0.1, runs in progress">
+</p>
+
+**AdviceLine** is an open UK benchmark, a classifier that detects advice-like answers, and a guardrail tested by a blinded A/B experiment.
 
 > **Status (Oct 2026): v0.1, pipeline built, first model runs in progress.** No results are claimed yet.
 > This is research, not legal advice: labels follow a [published rubric](docs/rubric.md), not a legal ruling.
